@@ -13,8 +13,11 @@ import { StatusCodes } from "http-status-codes";
 import mongoSanitize from "express-mongo-sanitize";
 
 import authRouter from "./routes/authRouter.js";
+import userRouter from "./routes/userRouter.js";
 
 import errorHandlerMiddleware from "./middleware/errorHandlerMiddleware.js";
+
+import { authenticateUser } from "./middleware/authMiddleware.js";
 
 const BASE_PORT = 5100;
 const FAIL_STATUS = 1;
@@ -35,6 +38,7 @@ app.use(helmet());
 app.use(mongoSanitize());
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", authenticateUser, userRouter);
 
 app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "./client/dist", "index.html"));
