@@ -18,11 +18,11 @@ export const authenticateUser = (req, res, next) => {
   }
 };
 
-export const authorizePermissions = (...roles) => {
-  return (req, res, next) => {
+export const authorizePermissions =
+  (...roles) =>
+  (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       throw new UnauthorizedError("Unauthorized to access this route");
     }
     next();
   };
-};

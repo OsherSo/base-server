@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import { StatusCodes } from "http-status-codes";
 
 export class NotFoundError extends Error {

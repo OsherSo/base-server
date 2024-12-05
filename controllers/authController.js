@@ -10,38 +10,63 @@ import { comparePassword, hashPassword } from "../utils/passwordUtils.js";
 const ONE_DAY = 1000 * 60 * 60 * 24;
 
 export const register = async (req, res) => {
-  const hashedPassword = await hashPassword(req.body.password);
-  req.body.password = hashedPassword;
+  const { username, password } = req.body;
 
-  await User.create(req.body);
+  const hashedPassword = await hashPassword(password);
 
-  res.status(StatusCodes.CREATED).json({ msg: "User created successfully" });
+  await User.create({
+    username,
+    password: hashedPassword,
+    role: "user",
+  });
+
+  res.status(StatusCodes.CREATED).json({
+    msg: "Registration successful. Please log in.",
+  });
 };
 
 export const login = async (req, res) => {
-  const user = await User.findOne({ email: req.body.email });
+  const { username, password } = req.body;
 
-  const isValidUser =
-    user && (await comparePassword(req.body.password, user.password));
+  const user = await User.findOne({ username });
+  if (!user) {
+    throw new UnauthenticatedError("Invalid credentials");
+  }
 
-  if (!isValidUser) throw new UnauthenticatedError("invalid credentials");
+  const isPasswordValid = await comparePassword(password, user.password);
+  if (!isPasswordValid) {
+    throw new UnauthenticatedError("Invalid credentials");
+  }
 
-  const token = createJWT({ userId: user._id, role: user.role });
+  user.lastLogin = new Date();
+  await user.save();
+
+  const token = createJWT({
+    userId: user._id,
+    role: user.role,
+  });
 
   res.cookie("token", token, {
     httpOnly: true,
     expires: new Date(Date.now() + ONE_DAY),
     secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
   });
 
-  res.status(StatusCodes.OK).json({ msg: "User logged in" });
+  res.status(StatusCodes.OK).json({
+    msg: "Login successful",
+  });
 };
 
 export const logout = (req, res) => {
   res.cookie("token", "logout", {
     httpOnly: true,
     expires: new Date(Date.now()),
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
   });
 
-  res.status(StatusCodes.OK).json({ msg: "User logged out" });
+  res.status(StatusCodes.OK).json({
+    msg: "Logout successful",
+  });
 };
